@@ -85,6 +85,8 @@ func main() {
 }
 
 type Router struct {
+	DB              *gorm.DB
+	UserDB          *UserDB
 	Mux             *http.ServeMux
 	Context         context.Context
 	APIRouter       http.Handler
@@ -92,10 +94,13 @@ type Router struct {
 	PublicRouter    http.Handler
 }
 
-func NewRouter(context context.Context) *Router {
+func NewRouter(context context.Context, db *gorm.DB) *Router {
+	userDB := newUserDB(db)
 	r := &Router{
+		DB:      db,
 		Mux:     http.NewServeMux(),
 		Context: context,
+		UserDB:  &userDB,
 	}
 	r.routes()
 
@@ -114,26 +119,31 @@ func (router *Router) routes() {
 	router.Mux.HandleFunc("GET /api/auth/status", router.api_auth_status)
 	router.Mux.HandleFunc("POST /api/auth/register", router.api_auth_register)
 	router.Mux.HandleFunc("GET /api/auth/verify-email", router.api_auth_verify_email)
-	/**
-	 * @todo
-	 * - auth forgot password
-	 * - auth reset password
-	 * - auth change password
-	 * - auth change email
-	 * - auth change username
-	 * - auth delete account
-	 * - auth update account
-	 * - auth get account
-	 */
 
-	router.Mux.Handle(
-		"/dashboard",
-		WithAuth(&DashboardHandler{Context: router.Context}),
-	)
-	router.Mux.Handle(
-		"/",
-		&PublicHandler{Context: router.Context},
-	)
+}
+
+func (router *Router) api_report_error(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var data ErrorDetails
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, "Error parsing JSON body", http.StatusBadRequest)
+		return
+	}
+	log.Printf("Received: %+v", data)
+
+	// Check token in the data matches the one in the db
+
+	// Insert the error into the database
+	router.DB.Create(&data)
+
+	// Tell the client that the error was successfully logged
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("{\"message\": \"Success\"}"))
 }
 
 func (router *Router) api_auth_login(w http.ResponseWriter, r *http.Request) {
@@ -145,7 +155,7 @@ func (router *Router) api_auth_login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Authenticate user
-	userDB := models.ConnectToUserDB()
+	userDB := router.UserDB
 
 	// Read the body
 	body, err := io.ReadAll(r.Body)
@@ -192,27 +202,6 @@ func (router *Router) api_auth_login(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{\"message\": \"Success\"}"))
 }
 
-func getSessionUser(r *http.Request) User {
-	session, _ := Store.Get(r, "overlord-session")
-
-	// Check if user is authenticated
-	auth, ok := session.Values["authenticated"].(bool)
-	if !ok || !auth {
-		return User{}
-	}
-
-	userID, _ := session.Values["userID"].(uint)
-
-	userDB := models.ConnectToUserDB()
-	user := User{}
-	user, err := userDB.GetUser(userID)
-	if err != nil {
-		return User{}
-	}
-
-	return user
-}
-
 func (router *Router) api_auth_logout(w http.ResponseWriter, r *http.Request) {
 	session, _ := Store.Get(r, "overlord-session")
 
@@ -251,7 +240,7 @@ func (router *Router) api_auth_verify_email(w http.ResponseWriter, r *http.Reque
 	token := r.URL.Query().Get("token")
 
 	// Authenticate user
-	userDB := models.ConnectToUserDB()
+	userDB := router.UserDB
 
 	user := userDB.FindByUsername(username)
 
@@ -279,7 +268,7 @@ func (router *Router) api_auth_verify_email(w http.ResponseWriter, r *http.Reque
 }
 
 func (router *Router) api_auth_register(w http.ResponseWriter, r *http.Request) {
-	userDB := newUserDB(UserDB)
+	userDB := router.UserDB
 
 	type registerForm struct {
 		Username  string `json:"username"`
