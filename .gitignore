@@ -4,3 +4,6 @@ session.key
 dist/
 pnpm-lock.yaml
 .generated/
+tmp/
+data/
+server/overlord
