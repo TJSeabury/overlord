@@ -93,7 +93,7 @@ declare const REPORTING_ENDPOINT: string;
       }
       const details: ErrorDetails = {
         domain: w.location.hostname,
-        errortext: message,
+        errorText: message,
         url,
         filename: source || "",
         line: line || 0,

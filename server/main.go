@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
@@ -43,7 +44,12 @@ func main() {
 	}
 	GlobalMailer.Initialize(smtpUsername, smtpPassword, smtpHost)
 
-	db, err := gorm.Open(sqlite.Open("database/user.db"), &gorm.Config{})
+	// Create the data directory if it doesn't exist
+	if _, err := os.Stat("data"); os.IsNotExist(err) {
+		os.Mkdir("data", 0755)
+	}
+
+	db, err := gorm.Open(sqlite.Open("data/app.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -69,6 +75,10 @@ func main() {
 		user_db.DB.Create(&adminUser)
 	}
 
+	// Create the router
+	router := NewRouter(context.Background(), db)
+
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 type Router struct {
@@ -106,7 +116,7 @@ func (router *Router) routes() {
 	router.Mux.HandleFunc("GET /api/auth/status", router.api_auth_status)
 	router.Mux.HandleFunc("POST /api/auth/register", router.api_auth_register)
 	router.Mux.HandleFunc("GET /api/auth/verify-email", router.api_auth_verify_email)
-
+	router.Mux.HandleFunc("POST /api/report-error", router.api_report_error)
 }
 
 func (router *Router) api_report_error(w http.ResponseWriter, r *http.Request) {
@@ -121,12 +131,21 @@ func (router *Router) api_report_error(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error parsing JSON body", http.StatusBadRequest)
 		return
 	}
-	log.Printf("Received: %+v", data)
+	//log.Printf("Received: %+v", data)
 
+	// Validate the data
+	err := data.ValidateFields()
+	if err != nil {
+		log.Println(data, err)
+		http.Error(w, "Invalid data", http.StatusBadRequest)
+		return
+	}
 	// Check token in the data matches the one in the db
 
 	// Insert the error into the database
 	router.DB.Create(&data)
+
+	log.Printf("Inserted: %+v", data)
 
 	// Tell the client that the error was successfully logged
 	w.WriteHeader(http.StatusOK)
