@@ -78,6 +78,40 @@ func main() {
 	// Create the router
 	router := NewRouter(context.Background(), db)
 
+	// Read in the shadow watcher script
+	shadowWatcherScript, err := os.ReadFile("../client/dist/ShadowWatcher.js")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// serve the shadow watcher script
+	router.Mux.HandleFunc("GET /ShadowWatcher", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		w.Write(shadowWatcherScript)
+	})
+
+	router.Mux.HandleFunc("GET /test", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(`<!DOCTYPE html>
+<html>
+<head>
+	<title>Overlord</title>
+	<script src="/ShadowWatcher" data-token="test-token"></script>
+</head>
+<body>
+	<h1>Overlord</h1>
+	<p>This is the Overlord dashboard.</p>
+	<script>
+	// This is a test script that will produce an error
+	const test = function() {
+		console.log("Test function called");
+		throw new Error("This is a test error");
+	};
+	test();
+	</script>
+</body>
+</html>`))
+	})
+
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
@@ -131,7 +165,6 @@ func (router *Router) api_report_error(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error parsing JSON body", http.StatusBadRequest)
 		return
 	}
-	//log.Printf("Received: %+v", data)
 
 	// Validate the data
 	err := data.ValidateFields()

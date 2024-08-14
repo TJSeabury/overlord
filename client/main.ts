@@ -99,8 +99,7 @@ declare const REPORTING_ENDPOINT: string;
         line: line || 0,
         column: column || 0,
         datetime: new Date().toISOString(),
-        os: this.determineOS(),
-        browser: this.determineBrowser(),
+        userAgent: navigator.userAgent,
       };
       this.sendLog(details);
     }
@@ -121,4 +120,6 @@ declare const REPORTING_ENDPOINT: string;
       error
     );
   };
+
+  console.log("ShadowWatcher loaded");
 })(window);

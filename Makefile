@@ -12,7 +12,7 @@ build-client:
 	pnpm run build
 
 build-server:
-	go build -o server/overlord server/main.go
+	cd server && go build -o overlord .
 
 build: generate-types build-client build-server
 
