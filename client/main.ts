@@ -1,26 +1,31 @@
+import { type ErrorDetails } from "./.generated/types";
+
+declare const REPORTING_ENDPOINT: string;
+
 ((w) => {
-  /**
-   * @typedef {Object} ErrorDetails
-   * @property {string} domain
-   * @property {string} errortext
-   * @property {string} url
-   * @property {string} line
-   * @property {string} datetime
-   * @property {string} os
-   * @property {string} browser
-   */
+
+  if (typeof REPORTING_ENDPOINT === "undefined") {
+    throw new Error("ShadowWatcher: REPORTING_ENDPOINT is not defined.");
+  }
+
+  const self = document.currentScript as HTMLScriptElement;
+  const token: string | null = self.getAttribute("data-token");
+  if (token === null) {
+    throw new Error("ShadowWatcher: Token is not defined.");
+  }
 
   /**
    * This is the controller class for the client. It is used to watch for errors and send them to the server.
    */
   class ShadowWatcher {
-    /**
-     * Creates an instance of ShadowWatcher.
-     * @param {string} token
-     */
-    constructor(token, reportingEndpoint) {
+
+    token: string;
+    reportingEndpoint: string;
+
+    constructor(token: string, reportingEndpoint: string) {
       this.token = token;
       this.reportingEndpoint = reportingEndpoint;
+
       this.sendLog = this.sendLog.bind(this);
       this.handleError = this.handleError.bind(this);
     }
@@ -29,7 +34,7 @@
      * Guesses the OS of the client.
      * @returns {string}
      */
-    determineOS() {
+    determineOS(): string {
       if (navigator.userAgent.indexOf("Windows") > -1) {
         return "windows";
       } else if (navigator.userAgent.indexOf("Mac") > -1) {
@@ -45,7 +50,7 @@
      * Guesses the browser of the client.
      * @returns {string}
      */
-    determineBrowser() {
+    determineBrowser(): string {
       if (navigator.userAgent.indexOf("Chrome") > -1) {
         return "chrome";
       } else if (navigator.userAgent.indexOf("Firefox") > -1) {
@@ -59,15 +64,12 @@
       }
     }
 
-    /**
-     * Sends the log to the server.
-     * @param {ErrorDetails} details
-     */
-    async SendLog(details) {
+    async sendLog(details: ErrorDetails) {
       const response = await fetch(this.reportingEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-ACCESS-TOKEN": this.token,
         },
         body: JSON.stringify(details),
       });
@@ -78,26 +80,45 @@
       }
     }
 
-    /**
-     * Handles errors from the client.
-     * @param {ErrorDetails} details
-     */
-    handleError(error, url, line) {
-      /** @type {ErrorDetails} */
-      const details = {
+    handleError(
+      message: string | Event,
+      url: string,
+      source: string | undefined,
+      line: number | undefined,
+      column: number | undefined,
+      error: Error | undefined
+    ) {
+      if (typeof message !== "string") {
+        message = error?.message || "";
+      }
+      const details: ErrorDetails = {
         domain: w.location.hostname,
-        error,
+        errortext: message,
         url,
-        line,
+        filename: source || "",
+        line: line || 0,
+        column: column || 0,
         datetime: new Date().toISOString(),
         os: this.determineOS(),
         browser: this.determineBrowser(),
       };
-      this.SendLog(details);
+      this.sendLog(details);
     }
   }
 
-  const shadowWatcher = new ShadowWatcher(token, reportingEndpoint);
+  const shadowWatcher = new ShadowWatcher(
+    token,
+    REPORTING_ENDPOINT
+  );
 
-  w.onerror = (error, url, line) => shadowWatcher.handleError(error, url, line);
+  onerror = (message, source, lineno, colno, error) => {
+    shadowWatcher.handleError(
+      message,
+      w.URL.toString(),
+      source,
+      lineno,
+      colno,
+      error
+    );
+  };
 })(window);

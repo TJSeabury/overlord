@@ -1,3 +1,6 @@
 node_modules/
 session.key
 .env
+dist/
+pnpm-lock.yaml
+.generated/

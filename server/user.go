@@ -67,28 +67,25 @@ func UserJSONMapper(data map[string]interface{}) (User, error) {
 	}, nil
 }
 
-type UserDB struct {
+type UserController struct {
 	DB *gorm.DB
 }
 
-func newUserDB(db *gorm.DB) UserDB {
-	return UserDB{DB: db}
+func newUserDB(db *gorm.DB) UserController {
+	return UserController{DB: db}
 }
 
-func (udb *UserDB) CreateUser(u *User) (uint, error) {
-	db := udb.DB
-	tx := db.Create(&u)
+func (uc *UserController) CreateUser(u *User) (uint, error) {
+	tx := uc.DB.Create(&u)
 	if tx.Error != nil {
 		return 0, tx.Error
 	}
 	return u.ID, nil
 }
 
-func (udb *UserDB) GetUser(id uint) (User, error) {
-	db := udb.DB
-
+func (uc *UserController) GetUser(id uint) (User, error) {
 	var u User
-	db.First(&u, id)
+	uc.DB.First(&u, id)
 
 	if u.ID == 0 {
 		return u, errors.New("user not found")
@@ -97,22 +94,19 @@ func (udb *UserDB) GetUser(id uint) (User, error) {
 	return u, nil
 }
 
-func (udb *UserDB) UpdateUser(u User) {
-	db := udb.DB
-	db.Save(&u)
+func (uc *UserController) UpdateUser(u User) {
+	uc.DB.Save(&u)
 }
 
-func (udb *UserDB) DeleteUser(id string) {
-	db := udb.DB
-
+func (uc *UserController) DeleteUser(id string) {
 	var u User
-	db.First(&u, id)
-	db.Delete(&u)
+	uc.DB.First(&u, id)
+	uc.DB.Delete(&u)
 }
 
-func (udb *UserDB) FindByUsername(username string) User {
+func (uc *UserController) FindByUsername(username string) User {
 	var u User
-	udb.DB.Where("username = ?", username).First(&u)
+	uc.DB.Where("username = ?", username).First(&u)
 	return u
 }
 

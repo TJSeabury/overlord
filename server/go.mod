@@ -1,4 +1,4 @@
-module github.com/TJSeabury/overlord
+module tjseabury/overlord
 
 go 1.22.0
 

@@ -1,0 +1,18 @@
+{
+  "name": "overlord",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild --bundle --minify --platform=browser --target=es2022 --format=esm --define:REPORTING_ENDPOINT=\"'${REPORTING_ENDPOINT}'\" --outfile=client/dist/ShadowWatcher.js client/main.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "0.23.0",
+    "esbuild-plugin-tsc": "^0.4.0",
+    "typescript": "^5.5.4"
+  }
+}

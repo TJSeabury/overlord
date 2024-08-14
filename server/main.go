@@ -11,25 +11,12 @@ import (
 	"strconv"
 	"time"
 
+	"tjseabury/overlord/types"
+
 	"github.com/joho/godotenv"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
-
-type ErrorDetails struct {
-	ID            int            `gorm:"primaryKey" json:"id"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt `gorm:"index"`
-	Domain        string         `gorm:"not null" json:"domain"`
-	Error         string         `gorm:"not null" json:"errortext"`
-	URL           string         `gorm:"not null" json:"url"`
-	Line          string         `gorm:"not null" json:"line"`
-	Datetime      string         `gorm:"not null" json:"datetime"`
-	OS            string         `gorm:"not null" json:"os"`
-	Browser       string         `gorm:"not null" json:"browser"`
-	WebPropertyID int            `gorm:"not null" json:"web_property_id"`
-}
 
 var APP_CONFIG map[string]string
 var GlobalMailer Mailer
@@ -61,7 +48,7 @@ func main() {
 		panic("failed to connect database")
 	}
 	db.AutoMigrate(&User{})
-	db.AutoMigrate(&ErrorDetails{})
+	db.AutoMigrate(&types.ErrorDetails{})
 
 	user_db := newUserDB(db)
 
@@ -86,7 +73,7 @@ func main() {
 
 type Router struct {
 	DB              *gorm.DB
-	UserDB          *UserDB
+	UserDB          *UserController
 	Mux             *http.ServeMux
 	Context         context.Context
 	APIRouter       http.Handler
@@ -129,7 +116,7 @@ func (router *Router) api_report_error(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var data ErrorDetails
+	var data types.ErrorDetails
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		http.Error(w, "Error parsing JSON body", http.StatusBadRequest)
 		return
