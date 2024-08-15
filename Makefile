@@ -19,6 +19,8 @@ build: generate-types build-client build-server
 watch: 
 	$(MAKE) generate-types
 	$(MAKE) build-client
+	export SITE_URL=$$(grep -m 1 'SITE_URL' ./server/.env | cut -d '=' -f 2) && \
+	export REPORTING_ENDPOINT="$$SITE_URL" && \
 	cd server && air -c ./.air.toml
 
 run-server:

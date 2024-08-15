@@ -1,0 +1,63 @@
+<!DOCTYPE html> 
+<html>
+<head>
+	<title>Overlord</title>
+</head>
+<body>
+	<h1>Overlord</h1>
+	<p>This is the Overlord dashboard.</p>
+	<table>
+		<thead>
+			<tr>
+				<th>Domain</th>
+				<th>Error Text</th>
+				<th>URL</th>
+				<th>Filename</th>
+				<th>Line</th>
+				<th>Column</th>
+				<th>Datetime</th>
+				<th>User Agent</th>
+				<th>Stack Trace</th>
+			</tr>
+		</thead>
+		<tbody>
+			{{range $index, $error := .}}
+			<tr>
+				<td>{{$error.Domain}}</td>
+				<td>{{$error.ErrorText}}</td>
+				<td>{{$error.URL}}</td>
+				<td>{{$error.Filename}}</td>
+				<td>{{$error.Line}}</td>
+				<td>{{$error.Column}}</td>
+				<td>{{$error.Datetime}}</td>
+				<td>{{$error.UserAgent}}</td>
+				<td>{{$error.StackTrace}}</td>
+			</tr>
+			{{end}}
+		</tbody>
+	</table>
+	<style>
+		body {
+			background-color: #111;
+			color: #fff;
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 20px;
+		}
+		table {
+			border-collapse: collapse;
+			width: 100%;
+		}
+		th, td {
+			text-align: left;
+			padding: 12px;
+		}
+		tr:nth-child(even) {
+			background-color: #222;
+		}
+		tr:nth-child(odd) {
+			background-color: #333;
+		}
+	</style>
+</body>
+</html>

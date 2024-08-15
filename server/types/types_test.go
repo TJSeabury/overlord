@@ -120,6 +120,16 @@ func TestSanitizeURL(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name:    "valid localhost url",
+			url:     "http://localhost:8080",
+			wantErr: false,
+		},
+		{
+			name:    "valid localhost url 2",
+			url:     "http://localhost:8080/test",
+			wantErr: false,
+		},
+		{
 			name:    "valid url",
 			url:     "https://example.com",
 			wantErr: false,

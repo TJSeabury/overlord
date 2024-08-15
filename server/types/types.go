@@ -10,14 +10,15 @@ import (
 )
 
 type ErrorDetails struct {
-	Domain    string `gorm:"not null" json:"domain"`
-	ErrorText string `gorm:"not null" json:"errorText"`
-	URL       string `gorm:"not null" json:"url"`
-	Filename  string `gorm:"not null" json:"filename"`
-	Line      int    `gorm:"not null" json:"line"`
-	Column    int    `gorm:"not null" json:"column"`
-	Datetime  string `gorm:"not null" json:"datetime"`
-	UserAgent string `gorm:"not null" json:"userAgent"`
+	Domain     string `gorm:"not null" json:"domain"`
+	ErrorText  string `gorm:"not null" json:"errorText"`
+	URL        string `gorm:"not null" json:"url"`
+	Filename   string `gorm:"not null" json:"filename"`
+	Line       int    `gorm:"not null" json:"line"`
+	Column     int    `gorm:"not null" json:"column"`
+	Datetime   string `gorm:"not null" json:"datetime"`
+	UserAgent  string `gorm:"not null" json:"userAgent"`
+	StackTrace string `gorm:"not null" json:"stackTrace"`
 }
 
 func (e *ErrorDetails) SanitizeDomain() error {

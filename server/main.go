@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -97,7 +98,7 @@ func main() {
 	<title>Overlord</title>
 	<script src="/ShadowWatcher" data-token="test-token"></script>
 </head>
-<body>
+<body style="background-color: #444; color: #fff;">
 	<h1>Overlord</h1>
 	<p>This is the Overlord dashboard.</p>
 	<script>
@@ -151,10 +152,39 @@ func (router *Router) routes() {
 	router.Mux.HandleFunc("POST /api/auth/register", router.api_auth_register)
 	router.Mux.HandleFunc("GET /api/auth/verify-email", router.api_auth_verify_email)
 	router.Mux.HandleFunc("POST /api/report-error", router.api_report_error)
+	router.Mux.HandleFunc("GET /", router.handle_dashboard)
+}
+
+func (router *Router) handle_dashboard(w http.ResponseWriter, r *http.Request) {
+	errors := make([]types.ErrorDetails, 0)
+	router.DB.Find(&errors)
+	fmt.Println(errors)
+
+	// Read in the dashboard template file
+	dashboardTemplateFile, err := os.ReadFile("templates/dashboard.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dashboard_template := template.Must(template.New("dashboard").Parse(
+		string(dashboardTemplateFile),
+	))
+
+	w.Header().Set("Content-Type", "text/html")
+	dashboard_template.Execute(w, errors)
 }
 
 func (router *Router) api_report_error(w http.ResponseWriter, r *http.Request) {
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")                                // Allow any origin
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS") // Allowed methods
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")     // Allowed headers
+
+	// If it's a preflight OPTIONS request, send an OK status and return
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
@@ -167,12 +197,12 @@ func (router *Router) api_report_error(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate the data
-	err := data.ValidateFields()
-	if err != nil {
-		log.Println(data, err)
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
-	}
+	// err := data.ValidateFields()
+	// if err != nil {
+	// 	log.Println(data, err)
+	// 	http.Error(w, "Invalid data", http.StatusBadRequest)
+	// 	return
+	// }
 	// Check token in the data matches the one in the db
 
 	// Insert the error into the database

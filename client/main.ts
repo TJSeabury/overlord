@@ -91,6 +91,7 @@ declare const REPORTING_ENDPOINT: string;
       if (typeof message !== "string") {
         message = error?.message || "";
       }
+      const stackTrace = error?.stack || 'Stack trace not available';
       const details: ErrorDetails = {
         domain: w.location.hostname,
         errorText: message,
@@ -100,20 +101,23 @@ declare const REPORTING_ENDPOINT: string;
         column: column || 0,
         datetime: new Date().toISOString(),
         userAgent: navigator.userAgent,
+        stackTrace,
       };
+      console.log(details);
       this.sendLog(details);
     }
   }
 
   const shadowWatcher = new ShadowWatcher(
     token,
-    REPORTING_ENDPOINT
+    REPORTING_ENDPOINT + '/api/report-error'
   );
 
   onerror = (message, source, lineno, colno, error) => {
+    console.log(w.URL.toString());
     shadowWatcher.handleError(
       message,
-      w.URL.toString(),
+      w.location.href,
       source,
       lineno,
       colno,
